@@ -17,13 +17,20 @@ https://docs.cosmwasm.com/docs/1.0/getting-started/installation
 - Get the testnet environment 
 - Getting the faucet 
 
+```
+https://docs.cosmwasm.com/docs/1.0/getting-started/setting-env
+```
 
 ## Build and test the contract 
 - Build 
-./build.sh 
 
+```
+./build.sh 
+```
 - Test 
+```
 cargo test 
+```
 
 ## Deploy and interact 
 Go to the scripts folder and do the following:
