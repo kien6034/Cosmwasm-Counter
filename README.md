@@ -25,12 +25,18 @@ https://docs.cosmwasm.com/docs/1.0/getting-started/setting-env
 - Build 
 
 ```
+cargo wasm 
+```
+
+```
 ./build.sh 
 ```
 - Test 
 ```
 cargo test 
 ```
+
+Note: You can delete the target, Cargo.lock to clear build data 
 
 ## Deploy and interact 
 Go to the scripts folder and do the following:
