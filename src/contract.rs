@@ -4,7 +4,7 @@ use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
 use cw2::set_contract_version;
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, GetCounterResponse};
 use crate::state::{STATE, State};
 
 const CONTRACT_NAME: &str = "crates.io:counter";
@@ -34,17 +34,16 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::SetCounter { value } => exe_set_counter(deps, value),
+        ExecuteMsg::Increment { } => exe_increment(deps),
         ExecuteMsg::Reset {} => exe_reset_counter(deps)
     }
 }
 
-fn exe_set_counter(deps:DepsMut, value: u64) -> Result<Response, ContractError>{
-    let state = State {
-        count: value
-    };
+fn exe_increment(deps:DepsMut) -> Result<Response, ContractError>{
+    let mut state = STATE.load(deps.storage)?;
+    state.count +=1;
     STATE.save(deps.storage, &state)?;
-    Ok(Response::new().add_attribute("action", "set_counter"))
+    Ok(Response::new().add_attribute("action", "increment"))
 }
 
 fn exe_reset_counter(deps:DepsMut) -> Result<Response, ContractError>{
@@ -62,16 +61,18 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     }
 }
 
-fn query_counter(deps: Deps) -> u64 {
+fn query_counter(deps: Deps) -> GetCounterResponse {
     let state = STATE.load(deps.storage);
-    state.unwrap().count
+    GetCounterResponse {
+        value: state.unwrap().count
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::{testing::{mock_dependencies, mock_env, mock_info}, attr, from_binary};
 
-    use crate::{msg::{InstantiateMsg, ExecuteMsg, QueryMsg}, contract::{instantiate, query}};
+    use crate::{msg::{InstantiateMsg, ExecuteMsg, QueryMsg, GetCounterResponse}, contract::{instantiate, query}};
 
     use super::execute;
 
@@ -94,7 +95,7 @@ mod tests {
 
 
     #[test]
-    fn test_set_counter(){
+    fn test_increment(){
         let mut deps =  mock_dependencies();
         let env = mock_env();
         let info = mock_info("addr1", &[]);
@@ -104,20 +105,19 @@ mod tests {
         };
         instantiate(deps.as_mut(), env.clone(), info.clone(), msg).unwrap();
 
-
         // Set the counter 
-        let set_counter_msg = ExecuteMsg::SetCounter { value: 100 };
+        let set_counter_msg = ExecuteMsg::Increment {};
         let resp_set_counter = execute(deps.as_mut(), env.clone(), info.clone(), set_counter_msg).unwrap();
         assert_eq!(resp_set_counter.attributes, vec![
-            attr("action", "set_counter")
+            attr("action", "increment")
         ]);
 
         // Validate the data
         let get_counter_msg = QueryMsg::GetCounter {};
         let query_resp = query(deps.as_ref(), env, get_counter_msg).unwrap();
-        let counter:u64 = from_binary(&query_resp).unwrap();
+        let counter:GetCounterResponse = from_binary(&query_resp).unwrap();
 
-        assert_eq!(counter, 100);
+        assert_eq!(counter.value, 1);
     }
 
     #[test]
@@ -132,7 +132,7 @@ mod tests {
         instantiate(deps.as_mut(), env.clone(), info.clone(), msg).unwrap();
 
         // Set the counter 
-        let set_counter_msg = ExecuteMsg::SetCounter { value: 100 };
+        let set_counter_msg = ExecuteMsg::Increment {};
         let _resp_set_counter = execute(deps.as_mut(), env.clone(), info.clone(), set_counter_msg).unwrap();
 
         // Reset the counter 
@@ -145,8 +145,8 @@ mod tests {
         // Validate the data
         let get_counter_msg = QueryMsg::GetCounter {};
         let query_resp = query(deps.as_ref(), env, get_counter_msg).unwrap();
-        let counter:u64 = from_binary(&query_resp).unwrap();
+        let counter:GetCounterResponse = from_binary(&query_resp).unwrap();
 
-        assert_eq!(counter, 0);
+        assert_eq!(counter.value, 0);
     }
 }
